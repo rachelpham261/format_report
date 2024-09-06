@@ -1,0 +1,4 @@
+pandas
+pytz
+streamlit
+openpyxl  # This is required by pandas to read Excel files (.xlsx format)
