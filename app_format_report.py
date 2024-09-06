@@ -26,13 +26,12 @@ PHONE_NUMBER_MAPPING = {
 PDT = pytz.timezone('America/Los_Angeles')
 EST = pytz.timezone('America/New_York')
 
-# Helper function to format the date, time, and get abbreviated day of the week in uppercase
+# Helper function to format the date and time
 def format_datetime(pdt_datetime):
     est_datetime = pdt_datetime.astimezone(EST)
     formatted_date = est_datetime.strftime('%Y%m%d')
     formatted_time = est_datetime.strftime('%H%M')
-    day_of_week = est_datetime.strftime('%a').upper()  # Get abbreviated day and convert to uppercase
-    return formatted_date, formatted_time, day_of_week
+    return formatted_date, formatted_time
 
 # Helper function to determine the response code
 def get_response_code(tags):
@@ -78,7 +77,7 @@ def main():
             start_time_pdt = row['Start Time']
             if pd.isna(start_time_pdt):
                 continue  # skip rows with missing 'Start Time'
-            date_str, time_str, day_of_week = format_datetime(PDT.localize(start_time_pdt))
+            date_str, time_str = format_datetime(PDT.localize(start_time_pdt))
             
             # Response Code
             response_code = get_response_code(row.get('Tags', ''))
@@ -126,8 +125,10 @@ def main():
         txt_data = output_txt.getvalue()
 
         # Use the first row's date to generate the file name
-        datetime_pdt = calls_df['Start Time'].iloc[0]
-        _, _, day_of_week = format_datetime(PDT.localize(datetime_pdt))
+        pdt_datetime = PDT.localize(calls_df['Start Time'].iloc[0])
+        est_datetime = pdt_datetime.astimezone(EST)
+        date_str = est_datetime.strftime('%m%d%y')
+        day_of_week = est_datetime.strftime('%a').upper()  # Get abbreviated day and convert to uppercase
         output_file_name = f"{day_of_week}_{date_str}.txt"
 
         # Display the file name to the user
