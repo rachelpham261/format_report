@@ -26,17 +26,18 @@ PHONE_NUMBER_MAPPING = {
 PDT = pytz.timezone('America/Los_Angeles')
 EST = pytz.timezone('America/New_York')
 
-# Helper function to format the date and time
+# Helper function to format the date, time, and get abbreviated day of the week in uppercase
 def format_datetime(pdt_datetime):
     est_datetime = pdt_datetime.astimezone(EST)
     formatted_date = est_datetime.strftime('%Y%m%d')
     formatted_time = est_datetime.strftime('%H%M')
-    return formatted_date, formatted_time
+    day_of_week = est_datetime.strftime('%a').upper()  # Get abbreviated day and convert to uppercase
+    return formatted_date, formatted_time, day_of_week
 
 # Helper function to determine the response code
 def get_response_code(tags):
     if pd.isna(tags):
-        return 'VCAL'
+        return 'CALL'
     tags_lower = tags.lower()
     if any(keyword in tags_lower for keyword in ['junk', 'missed call', 'test', 'wrong number']):
         return 'CALL'
@@ -77,7 +78,7 @@ def main():
             start_time_pdt = row['Start Time']
             if pd.isna(start_time_pdt):
                 continue  # skip rows with missing 'Start Time'
-            date_str, time_str = format_datetime(PDT.localize(start_time_pdt))
+            date_str, time_str, day_of_week = format_datetime(PDT.localize(start_time_pdt))
             
             # Response Code
             response_code = get_response_code(row.get('Tags', ''))
@@ -124,12 +125,17 @@ def main():
         output_txt.seek(0)
         txt_data = output_txt.getvalue()
 
-        # Generate the output file name using the current date
-        output_file_name = f"WED_{date_str}.txt"
+        # Use the first row's date to generate the file name
+        datetime_pdt = calls_df['Start Time'].iloc[0]
+        _, _, day_of_week = format_datetime(PDT.localize(datetime_pdt))
+        output_file_name = f"{day_of_week}_{date_str}.txt"
+
+        # Display the file name to the user
+        st.write(f"Your file is ready for download: `{output_file_name}`")
 
         # Provide download button for the generated txt file
         st.download_button(
-            label="Download TXT file",
+            label=f"Download {output_file_name}",
             data=txt_data,
             file_name=output_file_name,
             mime="text/plain"
